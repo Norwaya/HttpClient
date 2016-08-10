@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 
 import activity.treelocation.com.httpclient.entities.GitModel;
+import activity.treelocation.com.httpclient.entities.Version;
 import activity.treelocation.com.httpclient.service.GitApi;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
@@ -31,6 +32,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
@@ -40,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     EditText edit_user;
     ProgressBar pbar;
     String API = "https://api.github.com";  // BASE URL
+//    String API = "http://msgm.applinzi.com/";  // BASE URL
     String TAG = getClass().getSimpleName().toString();
 
 
@@ -55,10 +58,10 @@ public class MainActivity extends AppCompatActivity {
         edit_user = (EditText) findViewById(R.id.username);
         pbar = (ProgressBar) findViewById(R.id.pb);
         pbar.setVisibility(View.INVISIBLE);
-        final Gson customGsonInstance = new GsonBuilder()
-                .registerTypeAdapter(GitModel.class,
-                        new MarvelResultsDeserializer<GitModel>())
-                .create();
+//        final Gson customGsonInstance = new GsonBuilder()
+//                .registerTypeAdapter(GitModel.class,
+//                        new MarvelResultsDeserializer<GitModel>())
+//                .create();
 
         click.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -70,13 +73,15 @@ public class MainActivity extends AppCompatActivity {
                 Retrofit retrofit = new Retrofit.Builder()
                         .baseUrl(API)
                         .addConverterFactory(ScalarsConverterFactory.create())
-                        .addConverterFactory(GsonConverterFactory.create(customGsonInstance))
+                        .addConverterFactory(GsonConverterFactory.create())
                         .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                         .build();
                 GitApi gitApi = retrofit.create(GitApi.class);
                 Log.d(TAG, "onClick:1 "+new Date().getTime());
 
                 Observable<GitModel> observable = gitApi.getFeed(user);
+//                Observable<Version> observable = gitApi.getString();
+
 //                call.enqueue(new Callback<GitModel>() {
 //                    @Override
 //                    public void onResponse(Call<GitModel> call, Response<GitModel> response) {
@@ -90,12 +95,11 @@ public class MainActivity extends AppCompatActivity {
 //                });
                 Log.d(TAG, "onClick:2 "+new Date().getTime());
 
-                observable.subscribeOn(AndroidSchedulers.mainThread())
+                observable.subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(new Action1<GitModel>() {
                             @Override
                             public void call(GitModel gitModel) {
-                                Log.d(TAG, "call: "+Thread.currentThread().getName());
                                 tv.setText("Github Name :" + gitModel.getName() +
                                 "\nWebsite :"+gitModel.getBlog() +
                                 "\nCompany Name :"+gitModel.getCompany());
@@ -103,6 +107,11 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d(TAG, "call: "+gitModel.toString());
                                 pbar.setVisibility(View.INVISIBLE);
                                 Log.d(TAG, "onClick:3 "+new Date().getTime());
+                            }
+                        }, new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                Log.d(TAG, "call: "+throwable.getMessage().toString());
                             }
                         });
                 // Retrofit section start from here...
@@ -134,13 +143,13 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    class MarvelResultsDeserializer<T> implements JsonDeserializer<GitModel> {
-        @Override
-        public GitModel deserialize(JsonElement je, Type typeOfT,
-                                   JsonDeserializationContext context) throws JsonParseException {
-            // 转换Json的数据, 获取内部有用的信息
-            //JsonElement results = je.getAsJsonObject();
-            return new Gson().fromJson(je, typeOfT);
-        }
-    }
+//    class MarvelResultsDeserializer<T> implements JsonDeserializer<GitModel> {
+//        @Override
+//        public GitModel deserialize(JsonElement je, Type typeOfT,
+//                                   JsonDeserializationContext context) throws JsonParseException {
+//            // 转换Json的数据, 获取内部有用的信息
+//            //JsonElement results = je.getAsJsonObject();
+//            return new Gson().fromJson(je, typeOfT);
+//        }
+//    }
 }
